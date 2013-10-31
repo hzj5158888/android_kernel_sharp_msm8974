@@ -91,7 +91,6 @@ void __init msm_8974_reserve(void)
  */
 void __init msm8974_add_drivers(void)
 {
-	msm_smem_init();
 	msm_init_modem_notifier_list();
 	msm_smd_init();
 	msm_rpm_driver_init();
@@ -170,6 +169,7 @@ void __init msm8974_init(void)
 	msm_8974_init_gpiomux();
 	regulator_has_full_constraints();
 	board_dt_populate(adata);
+	msm_smem_init();
 	msm8974_add_drivers();
 }
 
