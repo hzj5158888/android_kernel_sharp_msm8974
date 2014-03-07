@@ -16,25 +16,6 @@
  * msm8974.dtsi file.
  */
 
-&sdcc1 {
-       status = "disabled";
-};
-
-&sdcc2 {
-	#address-cells = <0>;
-	interrupt-parent = <&sdcc2>;
-	interrupts = <0 1 2>;
-	#interrupt-cells = <1>;
-	interrupt-map-mask = <0xffffffff>;
-	interrupt-map = <0 &intc 0 125 0
-			1 &intc 0 220 0
-			2 &msmgpio 62 0x3>;
-	interrupt-names = "core_irq", "bam_irq", "status_irq";
-	cd-gpios = <&msmgpio 62 0x1>;
-//	wp-gpios = <&pm8941_gpios 29 0x1>;
-	status = "disabled";
-};
-
 &sdhc_1 {
 	vdd-supply = <&pm8941_l20>;
 	vdd-io-supply = <&pm8941_s3>;
@@ -99,16 +80,9 @@
 	sdpwr-gpio = <&pm8941_gpios 11 0>;
 };
 
-/* 
-  Drive strength 
+/*
+  Drive strength
  */
-&sdcc1 {
-    qcom,pad-drv-on = <0x4 0x4 0x3>; /* 10mA, 10mA, 8mA */
-};
-
-&sdcc2 {
-    qcom,pad-drv-on = <0x3 0x2 0x2>; /* 8mA, 6mA, 6mA */
-};
 
 &sdhc_1 {
     qcom,pad-drv-on = <0x4 0x4 0x3>; /* 10mA, 10mA, 8mA */
@@ -118,11 +92,10 @@
     qcom,pad-drv-on = <0x3 0x2 0x2>; /* 8mA, 6mA, 6mA */
 };
 
-/* 
+/*
   Clock rates
  */
 &sdhc_2 {
 	qcom,clk-rates = <400000 20000000 25000000 48000000 50000000 100000000 200000000>;
 	qcom,bus-bw-vectors-bps = <0 400000 20000000 25000000 48000000 50000000 100000000 200000000 4294967295>;
 };
-
