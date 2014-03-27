@@ -239,6 +239,7 @@ struct msm_fb_data_type {
 #ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00029 */
     struct completion panel_state_chg_comp;
 #endif  /* CONFIG_SHLCDC_BOARD */
+	struct dma_buf *fbmem_buf;
 };
 
 static inline void mdss_fb_update_notify_update(struct msm_fb_data_type *mfd)
