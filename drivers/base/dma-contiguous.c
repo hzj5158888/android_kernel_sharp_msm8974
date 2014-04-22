@@ -357,10 +357,15 @@ void __init dma_contiguous_reserve(phys_addr_t limit)
 				continue;
 			}
 <<<<<<< HEAD
+<<<<<<< HEAD
 			dma_contiguous_early_fixup(cma_areas[i].base,
 							cma_areas[i].size);
 =======
 >>>>>>> 611a97e... cma: Delay non-placed memblocks until after all allocations
+=======
+			dma_contiguous_early_fixup(cma_areas[i].base,
+							cma_areas[i].size);
+>>>>>>> 98a5e54... cma: Call dma_contiguous_early_fixup after allocation
 		}
 
 		pr_info("CMA: reserved %ld MiB at %pa for %s\n",
