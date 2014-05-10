@@ -1059,12 +1059,6 @@ int mdss_mdp_overlay_start(struct msm_fb_data_type *mfd)
 
 	pr_debug("starting fb%d overlay\n", mfd->index);
 
-	rc = pm_runtime_get_sync(&mfd->pdev->dev);
-	if (IS_ERR_VALUE(rc)) {
-		pr_err("unable to resume with pm_runtime_get_sync rc=%d\n", rc);
-		goto end;
-	}
-
 	/*
 	 * We need to do hw init before any hw programming.
 	 * Also, hw init involves programming the VBIF registers which
@@ -1078,7 +1072,7 @@ int mdss_mdp_overlay_start(struct msm_fb_data_type *mfd)
 			rc = mdss_iommu_ctrl(1);
 			if (IS_ERR_VALUE(rc)) {
 				pr_err("iommu attach failed rc=%d\n", rc);
-				goto pm_error;
+				goto end;
 			}
 			mdss_hw_init(mdss_res);
 			mdss_iommu_ctrl(0);
@@ -1103,8 +1097,6 @@ int mdss_mdp_overlay_start(struct msm_fb_data_type *mfd)
 ctl_error:
 	mdss_mdp_ctl_destroy(ctl);
 	mdp5_data->ctl = NULL;
-pm_error:
-	pm_runtime_put(&mfd->pdev->dev);
 end:
 	return rc;
 }
@@ -2909,24 +2901,37 @@ static int mdss_mdp_overlay_on(struct msm_fb_data_type *mfd)
         mdss_shdisp_lcd_power_on();
 #endif /* CONFIG_SHLCDC_BOARD */
 
+	rc = pm_runtime_get_sync(&mfd->pdev->dev);
+	if (IS_ERR_VALUE(rc)) {
+		pr_err("unable to resume with pm_runtime_get_sync rc=%d\n", rc);
+		goto end;
+	}
+	
 	if (!mfd->panel_info->cont_splash_enabled &&
 		(mfd->panel_info->type != DTV_PANEL)) {
 		rc = mdss_mdp_overlay_start(mfd);
-		if (!IS_ERR_VALUE(rc) &&
-			(mfd->panel_info->type != WRITEBACK_PANEL)) {
+		if (rc)
+			goto error_pm;
+		if (mfd->panel_info->type != WRITEBACK_PANEL) {
 			atomic_inc(&mfd->mdp_sync_pt_data.commit_cnt);
 			rc = mdss_mdp_overlay_kickoff(mfd, NULL);
 		}
 	} else {
 		rc = mdss_mdp_ctl_setup(mdp5_data->ctl);
 		if (rc)
-			return rc;
+			goto error_pm;
 	}
 
 	if (IS_ERR_VALUE(rc)) {
 		pr_err("Failed to turn on fb%d\n", mfd->index);
 		mdss_mdp_overlay_off(mfd);
+		goto end;
 	}
+
+error_pm:
+	if (rc)
+		pm_runtime_put_sync(&mfd->pdev->dev);
+end:
 	return rc;
 }
 
@@ -2960,6 +2965,12 @@ static int mdss_mdp_overlay_off(struct msm_fb_data_type *mfd)
     if (mfd->index == 0)
         mdss_shdisp_lcd_disp_off();
 #endif /* CONFIG_SHLCDC_BOARD */
+
+	if (mdp5_data->mdata->idle_pc) {
+		mdss_mdp_footswitch_ctrl_idle_pc(1, &mfd->pdev->dev);
+		mdss_mdp_ctl_restore(mdp5_data->ctl);
+	}
+
 
 	mdss_mdp_overlay_free_fb_pipe(mfd);
 
