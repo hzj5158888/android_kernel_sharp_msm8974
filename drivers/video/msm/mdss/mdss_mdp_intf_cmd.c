@@ -12,6 +12,7 @@
  */
 
 #include <linux/kernel.h>
+#include <linux/pm_runtime.h>
 
 #include "mdss_mdp.h"
 #include "mdss_panel.h"
@@ -56,7 +57,6 @@ struct mdss_mdp_cmd_ctx {
 	struct mutex clk_mtx;
 	spinlock_t clk_lock;
 	struct work_struct clk_work;
-	struct delayed_work pc_work;
 	struct work_struct pp_done_work;
 	atomic_t pp_done_cnt;
 #ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00046 */
@@ -73,7 +73,6 @@ struct mdss_mdp_cmd_ctx {
 	struct mdss_panel_recovery recovery;
 	struct mdss_mdp_cmd_ctx *sync_ctx; /* for partial update */
 	u32 pp_timeout_report_cnt;
-	bool idle_pc;
 };
 
 struct mdss_mdp_cmd_ctx mdss_mdp_cmd_ctx_list[MAX_SESSIONS];
@@ -263,31 +262,15 @@ static inline void mdss_mdp_cmd_clk_on(struct mdss_mdp_cmd_ctx *ctx)
 						ctx->rdptr_enabled);
 	if (!ctx->clk_enabled) {
 		mdss_bus_bandwidth_ctrl(true);
-
 		ctx->clk_enabled = 1;
-		if (cancel_delayed_work_sync(&ctx->pc_work))
-			pr_debug("deleted pending power collapse work\n");
 
 		rc = mdss_iommu_ctrl(1);
 		if (IS_ERR_VALUE(rc))
 			pr_err("IOMMU attach failed\n");
 
-		if (ctx->idle_pc) {
-			mdss_mdp_footswitch_ctrl_idle_pc(1,
-				&ctx->ctl->mfd->pdev->dev);
-			mdss_mdp_ctl_restore(ctx->ctl);
-			mdss_mdp_clk_ctrl(MDP_BLOCK_POWER_ON);
-
-			if (mdss_mdp_cmd_tearcheck_setup(ctx->ctl, true))
-				pr_warn("tearcheck setup failed\n");
-			ctx->idle_pc = false;
-		} else {
-			mdss_mdp_clk_ctrl(MDP_BLOCK_POWER_ON);
-		}
-
+		mdss_mdp_clk_ctrl(MDP_BLOCK_POWER_ON);
 		mdss_mdp_ctl_intf_event
 			(ctx->ctl, MDSS_EVENT_PANEL_CLK_CTRL, (void *)1);
-
 #ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00042 */
 		mdss_shdisp_pll_ctl(1);
 #endif /* CONFIG_SHLCDC_BOARD */
@@ -340,10 +323,7 @@ static inline void mdss_mdp_cmd_clk_off(struct mdss_mdp_cmd_ctx *ctx)
 				schedule_delayed_work(&ctx->ulps_work, ULPS_ENTER_TIME);
 		}
 #else /* CONFIG_SHLCDC_BOARD */
-		if ((ctx->panel_on) && (mdata->idle_pc_enabled))
-			schedule_delayed_work(&ctx->pc_work,
 #endif /* CONFIG_SHLCDC_BOARD */
-				POWER_COLLAPSE_TIME);
 #ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00042 */
 		mdss_shdisp_pll_ctl(0);
 #endif /* CONFIG_SHLCDC_BOARD */
@@ -492,27 +472,6 @@ static void clk_ctrl_work(struct work_struct *work)
 #else /* CONFIG_SHLCDC_BOARD */
 	mdss_mdp_cmd_clk_off(ctx);
 #endif /* CONFIG_SHLCDC_BOARD */
-}
-
-static void __mdss_mdp_cmd_pc_work(struct work_struct *work)
-{
-	struct delayed_work *dw = to_delayed_work(work);
-	struct mdss_mdp_cmd_ctx *ctx =
-		container_of(dw, struct mdss_mdp_cmd_ctx, pc_work);
-
-	if (!ctx) {
-		pr_err("%s: invalid ctx\n", __func__);
-		return;
-	}
-
-	if (!ctx->panel_on) {
-		pr_err("Panel is off. skipping power collapse\n");
-		return;
-	}
-
-	ctx->idle_pc = true;
-	ctx->ctl->play_cnt = 0;
-	mdss_mdp_footswitch_ctrl_idle_pc(0, &ctx->ctl->mfd->pdev->dev);
 }
 
 static int mdss_mdp_cmd_add_vsync_handler(struct mdss_mdp_ctl *ctl,
@@ -842,9 +801,6 @@ int mdss_mdp_cmd_stop(struct mdss_mdp_ctl *ctl)
 	if (cancel_work_sync(&ctx->clk_work))
 		pr_debug("no pending clk work\n");
 
-	if (cancel_delayed_work_sync(&ctx->pc_work))
-		pr_debug("deleted pending power collapse work\n");
-
 	mdss_mdp_ctl_intf_event(ctl,
 			MDSS_EVENT_REGISTER_RECOVERY_HANDLER,
 			NULL);
@@ -895,6 +851,16 @@ int mdss_mdp_cmd_stop(struct mdss_mdp_ctl *ctl)
 
 	return 0;
 }
+int mdss_mdp_cmd_restore(struct mdss_mdp_ctl *ctl)
+{
+	pr_debug("%s: called for ctl%d\n", __func__, ctl->num);
+	mdss_mdp_clk_ctrl(MDP_BLOCK_POWER_ON);
+	if (mdss_mdp_cmd_tearcheck_setup(ctl, true))
+		pr_warn("%s: tearcheck setup failed\n", __func__);
+	mdss_mdp_clk_ctrl(MDP_BLOCK_POWER_OFF);
+
+	return 0;
+}
 
 int mdss_mdp_cmd_start(struct mdss_mdp_ctl *ctl)
 {
@@ -936,7 +902,6 @@ int mdss_mdp_cmd_start(struct mdss_mdp_ctl *ctl)
 	spin_lock_init(&ctx->clk_lock);
 	mutex_init(&ctx->clk_mtx);
 	INIT_WORK(&ctx->clk_work, clk_ctrl_work);
-	INIT_DELAYED_WORK(&ctx->pc_work, __mdss_mdp_cmd_pc_work);
 	INIT_WORK(&ctx->pp_done_work, pingpong_done_work);
 	atomic_set(&ctx->pp_done_cnt, 0);
 	INIT_LIST_HEAD(&ctx->vsync_handlers);
@@ -971,6 +936,7 @@ int mdss_mdp_cmd_start(struct mdss_mdp_ctl *ctl)
 	ctl->add_vsync_handler = mdss_mdp_cmd_add_vsync_handler;
 	ctl->remove_vsync_handler = mdss_mdp_cmd_remove_vsync_handler;
 	ctl->read_line_cnt_fnc = mdss_mdp_cmd_line_count;
+	ctl->restore_fnc = mdss_mdp_cmd_restore;
 	pr_debug("%s:-\n", __func__);
 
 	return 0;
