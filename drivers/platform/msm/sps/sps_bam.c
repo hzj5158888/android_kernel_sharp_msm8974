@@ -1123,6 +1123,7 @@ int sps_bam_pipe_set_params(struct sps_bam *dev, u32 pipe_index, u32 options)
 	int ack_xfers;
 	u32 size;
 	int n;
+	bool atmc_enbl = false;
 
 	/* Capture some options */
 	wake_up_is_one_shot = ((options & SPS_O_WAKEUP_IS_ONESHOT));
@@ -1207,13 +1208,6 @@ int sps_bam_pipe_set_params(struct sps_bam *dev, u32 pipe_index, u32 options)
 			memset(pipe->sys.desc_cache, 0, pipe->desc_size + size);
 		}
 
-		if (pipe->sys.desc_cache == NULL) {
-			/*** MUST BE LAST POINT OF FAILURE (see below) *****/
-			SPS_ERR("sps:Desc cache error: BAM %pa pipe %d: %d\n",
-				BAM_ID(dev), pipe_index,
-				pipe->desc_size + size);
-			return SPS_ERROR;
-		}
 		pipe->sys.user_ptrs = (void **)(pipe->sys.desc_cache +
 						 pipe->desc_size);
 		pipe->sys.cache_offset = pipe->sys.acked_offset;
