@@ -169,6 +169,7 @@ int32_t msm_camera_cci_i2c_write_seq(struct msm_camera_i2c_client *client,
 		pr_err("%s:%d no memory\n", __func__, __LINE__);
 		return -ENOMEM;
 	}
+
 	reg_conf_tbl[0].reg_addr = addr;
 	for (i = 0; i < num_byte; i++) {
 		reg_conf_tbl[i].reg_data = data[i];
