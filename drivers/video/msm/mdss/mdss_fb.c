@@ -56,6 +56,8 @@
 #include "mdss_fb.h"
 #include "mdss_mdp_splash_logo.h"
 
+#include "mdss_livedisplay.h"
+
 #ifdef CONFIG_SHLCDC_BOARD
 #include "mdss_shdisp.h"
 #include "mdss_mdp.h"
@@ -554,6 +556,7 @@ static int mdss_fb_create_sysfs(struct msm_fb_data_type *mfd)
 
 	rc = sysfs_create_group(&mfd->fbi->dev->kobj, &mdss_fb_attr_group);
 	if (rc)
+	return mdss_livedisplay_create_sysfs(mfd);
 		pr_err("sysfs group creation failed, rc=%d\n", rc);
 	return rc;
 }
