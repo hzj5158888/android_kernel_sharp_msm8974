@@ -771,4 +771,6 @@ int  mdss_mdp_ctl_reset(struct mdss_mdp_ctl *ctl);
 void mdss_mdp_suspend_shdisp(struct platform_device *pdev);
 #endif /* CONFIG_SHLCDC_BOARD */
 
+int mdss_mdp_user_pcc_config(struct mdp_pcc_cfg_data *config);
+
 #endif /* MDSS_MDP_H */
