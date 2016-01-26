@@ -591,7 +591,7 @@ static int mdss_mdp_get_img(struct msmfb_data *img,
 		data->addr += data->offset;
 		data->len -= data->offset;
 
-		pr_debug("mem=%d ihdl=%p buf=0x%pa len=0x%lu\n", img->memory_id,
+		pr_debug("mem=%d ihdl=%p buf=0x%pa len=0x%u\n", img->memory_id,
 			 data->srcp_ihdl, &data->addr, data->len);
 	} else {
 		mdss_mdp_put_img(data);
@@ -629,7 +629,7 @@ static int mdss_mdp_map_buffer(struct mdss_mdp_img_data *data)
 			ret = ion_map_iommu(iclient, data->srcp_ihdl,
 						mdss_get_iommu_domain(domain),
 						0, SZ_4K, 0, &data->addr,
-						&data->len, 0, 0);
+						(unsigned long *)&data->len, 0, 0);
 			if (ret && (domain == MDSS_IOMMU_DOMAIN_SECURE))
 				msm_ion_unsecure_buffer(iclient,
 						data->srcp_ihdl);
@@ -657,8 +657,8 @@ static int mdss_mdp_map_buffer(struct mdss_mdp_img_data *data)
 		data->addr += data->offset;
 		data->len -= data->offset;
 
-		pr_debug("mem=%d ihdl=%p buf=0x%pa len=0x%x\n", img->memory_id,
-			 data->srcp_ihdl, data->addr, data->len);
+		pr_debug("ihdl=%p buf=0x%pa len=0x%u\n",
+			 data->srcp_ihdl, &data->addr, data->len);
 	} else {
 		mdss_mdp_put_img(data);
 		return ret ? : -EOVERFLOW;
