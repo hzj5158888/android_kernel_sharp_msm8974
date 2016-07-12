@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2014,2016, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2008-2014,2016 The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -4038,6 +4038,11 @@ static int kgsl_check_gpu_addr_collision(
 		if (ret) {
 			spin_lock(&private->mem_lock);
 			kgsl_mem_entry_untrack_gpuaddr(private, entry);
+			spin_unlock(&private->mem_lock);
+		} else {
+			/* Insert mem entry in mem_rb tree */
+			spin_lock(&private->mem_lock);
+			kgsl_mem_entry_commit_mem_list(private, entry);
 			spin_unlock(&private->mem_lock);
 		}
 	} else {
