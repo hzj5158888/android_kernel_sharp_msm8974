@@ -327,6 +327,7 @@ int32_t msm_camera_qup_i2c_write_seq_table(struct msm_camera_i2c_client *client,
 		__func__, reg_setting->reg_data_size, I2C_SEQ_REG_DATA_MAX);
 		return rc;
 	}
+
 	for (i = 0; i < write_setting->size; i++) {
 		rc = msm_camera_qup_i2c_write_seq(client, reg_setting->reg_addr,
 			reg_setting->reg_data, reg_setting->reg_data_size);
