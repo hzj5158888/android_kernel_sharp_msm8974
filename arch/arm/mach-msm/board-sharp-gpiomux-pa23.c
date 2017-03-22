@@ -277,7 +277,7 @@ static struct gpiomux_setting gpio_i2c_act_config = {
 };
 #endif
 
-#if 0
+
 static struct gpiomux_setting lcd_en_act_cfg = {
 	.func = GPIOMUX_FUNC_GPIO,
 	.drv = GPIOMUX_DRV_8MA,
@@ -290,7 +290,20 @@ static struct gpiomux_setting lcd_en_sus_cfg = {
 	.drv = GPIOMUX_DRV_2MA,
 	.pull = GPIOMUX_PULL_DOWN,
 };
-#endif
+
+static struct gpiomux_setting lcd_te_act_cfg = {
+  .func = GPIOMUX_FUNC_1,
+  .drv = GPIOMUX_DRV_2MA,
+  .pull = GPIOMUX_PULL_DOWN,
+  .dir = GPIOMUX_IN,
+};
+
+static struct gpiomux_setting lcd_te_sus_cfg = {
+  .func = GPIOMUX_FUNC_1,
+  .drv = GPIOMUX_DRV_2MA,
+  .pull = GPIOMUX_PULL_DOWN,
+  .dir = GPIOMUX_IN,
+};
 
 #if 0
 static struct gpiomux_setting atmel_resout_sus_cfg = {
@@ -589,7 +602,7 @@ static struct msm_gpiomux_config msm_rumi_blsp_configs[] __initdata = {
 };
 #endif
 
-#if 0
+
 static struct msm_gpiomux_config msm_lcd_configs[] __initdata = {
 	{
 		.gpio = 58,
@@ -599,7 +612,17 @@ static struct msm_gpiomux_config msm_lcd_configs[] __initdata = {
 		},
 	},
 };
-#endif
+
+static struct msm_gpiomux_config msm_lcd_te_configs[] __initdata = {
+  {
+    .gpio = 12,
+    .settings = {
+      [GPIOMUX_ACTIVE]    = &lcd_te_act_cfg,
+      [GPIOMUX_SUSPENDED] = &lcd_te_sus_cfg,
+    },
+  },
+};
+
 
 #if 0
 static struct msm_gpiomux_config msm_epm_configs[] __initdata = {
@@ -2488,12 +2511,15 @@ void __init msm_8974_init_gpiomux(void)
 	msm_gpiomux_install(msm_hsic_hub_configs,
 				ARRAY_SIZE(msm_hsic_hub_configs));
 
-#if 0
+
 	msm_gpiomux_install(msm_hdmi_configs, ARRAY_SIZE(msm_hdmi_configs));
 	if (of_board_is_fluid())
 		msm_gpiomux_install(msm_mhl_configs,
 				    ARRAY_SIZE(msm_mhl_configs));
-
+	else
+		msm_gpiomux_install(msm_lcd_te_configs,
+					  ARRAY_SIZE(msm_lcd_te_configs));
+										
 	if (of_board_is_liquid() ||
 	    (of_board_is_dragonboard() && machine_is_apq8074()))
 		msm_gpiomux_install(msm8974_pri_ter_auxpcm_configs,
@@ -2516,7 +2542,7 @@ void __init msm_8974_init_gpiomux(void)
 	if (of_board_is_rumi())
 		msm_gpiomux_install(msm_rumi_blsp_configs,
 				    ARRAY_SIZE(msm_rumi_blsp_configs));
-#endif
+
 
 	if (socinfo_get_platform_subtype() == PLATFORM_SUBTYPE_MDM)
 		msm_gpiomux_install(mdm_configs,
