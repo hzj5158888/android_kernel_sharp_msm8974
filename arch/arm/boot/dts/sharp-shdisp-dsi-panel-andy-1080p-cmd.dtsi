@@ -72,6 +72,7 @@
         qcom,mdss-dsi-mdp-trigger = "none";
         qcom,mdss-dsi-bl-pmic-control-type = "none";
         qcom,mdss-dsi-te-check-enable;
+        qcom,ulps-enabled;
         qcom,mdss-dsi-te-using-te-pin;
         qcom,mdss-dsi-te-pin-select = <1>;
 	};
