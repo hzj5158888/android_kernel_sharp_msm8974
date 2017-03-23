@@ -39,7 +39,6 @@
 #include <linux/percpu.h>
 #include <linux/slab.h>
 #include <linux/syscore_ops.h>
-#include <linux/wakeup_reason.h>
 
 #include <asm/irq.h>
 #include <asm/exception.h>
