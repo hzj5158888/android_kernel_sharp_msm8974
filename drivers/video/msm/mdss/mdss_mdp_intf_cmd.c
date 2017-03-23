@@ -62,8 +62,9 @@ struct mdss_mdp_cmd_ctx {
 	struct work_struct pp_done_work;
 	atomic_t pp_done_cnt;
 #ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00046 */
-    struct mutex qos_mtx;
-    int qos_deny_collapse;
+	struct mutex qos_mtx;
+	struct work_struct qos_work;
+	int qos_deny_collapse;
 #endif /* CONFIG_SHLCDC_BOARD */
 
 	/* te config */
@@ -80,14 +81,15 @@ struct mdss_mdp_cmd_ctx {
 struct mdss_mdp_cmd_ctx mdss_mdp_cmd_ctx_list[MAX_SESSIONS];
 
 static int mdss_mdp_cmd_do_notifier(struct mdss_mdp_cmd_ctx *ctx);
-#if 0
+
 #ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00046 */
 static struct workqueue_struct *qos_wq;
+static void mdp_qos_work_handler(struct work_struct *work)
 {
     struct mdss_mdp_cmd_ctx *ctx =
         container_of(work, typeof(*ctx), qos_work);
-	return (ctx->panel_power_state == MDSS_PANEL_POWER_ON);
-    if (ctx->panel_on == 0) {
+
+    if (ctx->panel_power_state == MDSS_PANEL_POWER_OFF) {
         return;
     }
 
@@ -96,15 +98,6 @@ static struct workqueue_struct *qos_wq;
         mipi_dsi_latency_allow_collapse();
     }
     mutex_unlock(&ctx->qos_mtx);
-}
-#endif /* CONFIG_SHLCDC_BOARD */
-#endif
-
-#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00055 */
-static inline int __mdss_mdp_cmd_ulps_feature_enabled(
-	struct mdss_panel_data *pdata)
-{
-	return pdata->panel_info.ulps_feature_enabled;
 }
 #endif /* CONFIG_SHLCDC_BOARD */
 
@@ -332,13 +325,6 @@ static inline void mdss_mdp_cmd_clk_off(struct mdss_mdp_cmd_ctx *ctx)
 		mdss_iommu_ctrl(0);
 		mdss_bus_bandwidth_ctrl(false);
 		mdss_mdp_clk_ctrl(MDP_BLOCK_POWER_OFF);
-#ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00055 */
-		if (__mdss_mdp_cmd_ulps_feature_enabled(ctx->ctl->panel_data)) {
-			if (ctx->panel_on)
-				schedule_delayed_work(&ctx->ulps_work, ULPS_ENTER_TIME);
-		}
-#else /* CONFIG_SHLCDC_BOARD */
-#endif /* CONFIG_SHLCDC_BOARD */
 #ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00042 */
 		mdss_shdisp_pll_ctl(0);
 #endif /* CONFIG_SHLCDC_BOARD */
@@ -1090,7 +1076,15 @@ int mdss_mdp_cmd_start(struct mdss_mdp_ctl *ctl)
 	}
 
 #ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00046 */
-    mutex_init(&ctx->qos_mtx);
+	mutex_init(&ctx->qos_mtx);
+	if(!qos_wq) {
+		qos_wq = create_singlethread_workqueue("qos_wq");
+	}
+	if(qos_wq) {
+		INIT_WORK(&ctx->qos_work, mdp_qos_work_handler);
+	} else {
+		pr_err("%s: qos_wq, create err\n", __func__);
+	}
 #endif /* CONFIG_SHLCDC_BOARD */
 
 	ctl->stop_fnc = mdss_mdp_cmd_stop;

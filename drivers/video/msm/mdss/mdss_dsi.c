@@ -1521,10 +1521,6 @@ int dsi_panel_device_register(struct device_node *pan_node,
 		pr_err("%s:%d, Disp_en gpio not specified\n",
 						__func__, __LINE__);
 
-#ifdef CONFIG_SHLCDC_BOARD
-				GPIO_CFG_NO_PULL,
-#else
-#endif /* CONFIG_SHLCDC_BOARD */
 	ctrl_pdata->rst_gpio = of_get_named_gpio(ctrl_pdev->dev.of_node,
 			 "qcom,platform-reset-gpio", 0);
 	if (!gpio_is_valid(ctrl_pdata->rst_gpio))

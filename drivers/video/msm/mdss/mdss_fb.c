@@ -1026,7 +1026,7 @@ void mdss_fb_set_backlight(struct msm_fb_data_type *mfd, u32 bkl_lvl)
 
 
 #ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00010 */
-	if ((((mdss_fb_is_power_off(mfd) && mfd->dcm_state != DCM_ENTER)
+	if (((mdss_fb_is_power_off(mfd) && mfd->dcm_state != DCM_ENTER)
             || (!mfd->bl_updated && !panel_displayed))
             && bkl_lvl && !IS_CALIB_MODE_BL(mfd)) {
         mfd->unset_bl_level = bkl_lvl;
@@ -2690,7 +2690,7 @@ static int __mdss_fb_perform_commit(struct msm_fb_data_type *mfd)
 	}
 #ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00006 *//* CUST_ID_00010 */
     if (!ret) {
-        if ((mfd->panel_power_on) &&
+        if ((mdss_fb_is_power_on(mfd)) &&
             (mfd->index == 0) &&
             (!mdss_shdisp_is_disp_on())) {
             mdss_shdisp_start_display();
