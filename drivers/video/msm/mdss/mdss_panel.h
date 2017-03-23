@@ -480,8 +480,29 @@ int mdss_register_panel(struct platform_device *pdev,
 	struct mdss_panel_data *pdata);
 
 /*
+ * mdss_panel_is_power_off: - checks if a panel is off
+ * @panel_power_state: enum identifying the power state to be checked
+ */
+static inline bool mdss_panel_is_power_off(int panel_power_state)
+{
+	return (panel_power_state == MDSS_PANEL_POWER_OFF);
+}
+
+/**
+ * mdss_panel_is_power_on_interactive: - checks if a panel is on and interactive
+ * @panel_power_state: enum identifying the power state to be checked
+ *
+ * This function returns true only is the panel is fully interactive and
+ * opertaing in normal mode.
+ */
+static inline bool mdss_panel_is_power_on_interactive(int panel_power_state)
+{
+	return (panel_power_state == MDSS_PANEL_POWER_ON);
+}
+
+/**
  * mdss_panel_is_panel_power_on: - checks if a panel is on
- * @pdata: pointer to the panel struct associated to the panel
+ * @panel_power_state: enum identifying the power state to be checked
  *
  * A panel is considered to be on as long as it can accept any commands
  * or data. Sometimes it is posible to program the panel to be in a low

@@ -1,4 +1,4 @@
-/* Copyright (c) 2012-2014, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2012-2015, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -409,6 +409,7 @@ int mdss_dsi_reg_status_check(struct mdss_dsi_ctrl_pdata *ctrl);
 bool __mdss_dsi_clk_enabled(struct mdss_dsi_ctrl_pdata *ctrl, u8 clk_type);
 void mdss_dsi_ctrl_setup(struct mdss_dsi_ctrl_pdata *ctrl);
 void mdss_dsi_dln0_phy_err(struct mdss_dsi_ctrl_pdata *ctrl);
+int mdss_dsi_panel_power_ctrl(struct mdss_panel_data *pdata, int power_state);
 
 int mdss_dsi_panel_init(struct device_node *node,
 		struct mdss_dsi_ctrl_pdata *ctrl_pdata,
@@ -487,6 +488,33 @@ static inline struct mdss_dsi_ctrl_pdata *mdss_dsi_get_ctrl_by_index(int ndx)
 		return NULL;
 
 	return ctrl_list[ndx];
+}
+
+static inline bool mdss_dsi_is_panel_off(struct mdss_panel_data *pdata)
+{
+	return mdss_panel_is_power_off(pdata->panel_info.panel_power_state);
+}
+
+static inline bool mdss_dsi_is_panel_on(struct mdss_panel_data *pdata)
+{
+	return mdss_panel_is_power_on(pdata->panel_info.panel_power_state);
+}
+
+static inline bool mdss_dsi_is_panel_on_interactive(
+	struct mdss_panel_data *pdata)
+{
+	return mdss_panel_is_power_on_interactive(
+		pdata->panel_info.panel_power_state);
+}
+
+static inline bool mdss_dsi_is_panel_on_lp(struct mdss_panel_data *pdata)
+{
+	return mdss_panel_is_power_on_lp(pdata->panel_info.panel_power_state);
+}
+
+static inline bool mdss_dsi_is_panel_on_ulp(struct mdss_panel_data *pdata)
+{
+	return mdss_panel_is_power_on_ulp(pdata->panel_info.panel_power_state);
 }
 
 static inline bool mdss_dsi_ulps_feature_enabled(

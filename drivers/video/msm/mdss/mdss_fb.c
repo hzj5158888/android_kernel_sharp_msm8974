@@ -226,7 +226,7 @@ static int mdss_fb_notify_update(struct msm_fb_data_type *mfd,
 		mutex_unlock(&mfd->no_update.lock);
 		to_user = (unsigned int)mfd->no_update.value;
 	} else {
-		if (mdss_fb_is_panel_power_on(mfd)) {
+		if (mdss_fb_is_power_on(mfd)) {
 			INIT_COMPLETION(mfd->power_off_comp);
 			ret = wait_for_completion_interruptible_timeout(
 						&mfd->power_off_comp, 1 * HZ);
@@ -559,12 +559,19 @@ static struct attribute_group mdss_fb_attr_group = {
 
 static int mdss_fb_create_sysfs(struct msm_fb_data_type *mfd)
 {
-	int rc;
+	int rc = 0;
+
+	if (mfd == NULL)
+		goto sysfs_err;
 
 	rc = sysfs_create_group(&mfd->fbi->dev->kobj, &mdss_fb_attr_group);
 	if (rc)
+		goto sysfs_err;
+
 	return mdss_livedisplay_create_sysfs(mfd);
-		pr_err("sysfs group creation failed, rc=%d\n", rc);
+
+sysfs_err:
+	pr_err("%s: sysfs group creation failed, rc=%d", __func__, rc);
 	return rc;
 }
 
@@ -627,7 +634,7 @@ static int mdss_fb_probe(struct platform_device *pdev)
 	mfd->bl_level = 0;
 	mfd->bl_level_prev_scaled = 0;
 	mfd->bl_scale = 1024;
-	mfd->bl_min_lvl = 30;
+	mfd->bl_min_lvl = 0;
 	mfd->ad_bl_level = 0;
 	mfd->fb_imgType = MDP_RGBA_8888;
 
@@ -1019,7 +1026,7 @@ void mdss_fb_set_backlight(struct msm_fb_data_type *mfd, u32 bkl_lvl)
 
 
 #ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00010 */
-	if ((((!mdss_fb_is_panel_power_on(mfd) && mfd->dcm_state != DCM_ENTER)
+	if ((((mdss_fb_is_power_off(mfd) && mfd->dcm_state != DCM_ENTER)
             || (!mfd->bl_updated && !panel_displayed))
             && bkl_lvl && !IS_CALIB_MODE_BL(mfd)) {
         mfd->unset_bl_level = bkl_lvl;
@@ -1029,7 +1036,7 @@ void mdss_fb_set_backlight(struct msm_fb_data_type *mfd, u32 bkl_lvl)
     }
 #else   /* CONFIG_SHLCDC_BOARD */
 	
-	if ((((!mdss_fb_is_panel_power_on(mfd) && mfd->dcm_state != DCM_ENTER)
+	if ((((mdss_fb_is_power_off(mfd) && mfd->dcm_state != DCM_ENTER)
 		|| !mfd->bl_updated) && !IS_CALIB_MODE_BL(mfd)) ||
 		mfd->panel_info->cont_splash_enabled) {
 		mfd->unset_bl_level = bkl_lvl;
@@ -2542,7 +2549,7 @@ static int mdss_fb_pan_display_ex(struct fb_info *info,
 	if (!mfd || (!mfd->op_enable))
 		return -EPERM;
 
-	if ((!mdss_fb_is_panel_power_on(mfd)) &&
+	if ((mdss_fb_is_power_off(mfd)) &&
 		!((mfd->dcm_state == DCM_ENTER) &&
 		(mfd->panel.type == MIPI_CMD_PANEL)))
 		return -EPERM;
@@ -2608,7 +2615,7 @@ static int mdss_fb_pan_display_sub(struct fb_var_screeninfo *var,
 	if (!mfd->op_enable)
 		return -EPERM;
 
-	if ((!mdss_fb_is_panel_power_on(mfd)) &&
+	if ((mdss_fb_is_power_off(mfd)) &&
 		!((mfd->dcm_state == DCM_ENTER) &&
 		(mfd->panel.type == MIPI_CMD_PANEL)))
 		return -EPERM;
@@ -2925,7 +2932,7 @@ int mdss_fb_dcm(struct msm_fb_data_type *mfd, int req_state)
 	switch (req_state) {
 	case DCM_UNBLANK:
 		if (mfd->dcm_state == DCM_UNINIT &&
-			!mdss_fb_is_panel_power_on(mfd) && mfd->mdp.on_fnc) {
+			mdss_fb_is_power_off(mfd) && mfd->mdp.on_fnc) {
 			ret = mfd->mdp.on_fnc(mfd);
 			if (ret == 0) {
 				mfd->panel_power_state = MDSS_PANEL_POWER_ON;
@@ -2953,7 +2960,7 @@ int mdss_fb_dcm(struct msm_fb_data_type *mfd, int req_state)
 	case DCM_BLANK:
 		if ((mfd->dcm_state == DCM_EXIT ||
 			mfd->dcm_state == DCM_UNBLANK) &&
-			mdss_fb_is_panel_power_on(mfd) && mfd->mdp.off_fnc) {
+			mdss_fb_is_power_on(mfd) && mfd->mdp.off_fnc) {
 			ret = mfd->mdp.off_fnc(mfd);
 			if (ret == 0) {
 				mfd->panel_power_state = MDSS_PANEL_POWER_OFF;
@@ -3273,7 +3280,7 @@ static int mdss_fb_ioctl(struct fb_info *info, unsigned int cmd,
 		if (ret)
 			goto exit;
 
-		if ((!mfd->op_enable) || (!mdss_fb_is_panel_power_on(mfd))) {
+		if ((!mfd->op_enable) || (mdss_fb_is_power_off(mfd))) {
 			ret = -EPERM;
 			goto exit;
 		}
@@ -3425,7 +3432,7 @@ int mdss_fb_register_mdp_instance(struct msm_mdp_interface *mdp)
 }
 EXPORT_SYMBOL(mdss_fb_register_mdp_instance);
 
-int mdss_fb_get_phys_info(unsigned long *start, unsigned long *len, int fb_num)
+int mdss_fb_get_phys_info(dma_addr_t *start, unsigned long *len, int fb_num)
 {
 	struct fb_info *info;
 	struct msm_fb_data_type *mfd;

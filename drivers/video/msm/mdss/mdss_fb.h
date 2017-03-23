@@ -203,10 +203,10 @@ struct msm_fb_data_type {
 	struct disp_info_type_suspend suspend;
 
 	struct ion_handle *ihdl;
-	unsigned long iova;
+	dma_addr_t iova;
 	void *cursor_buf;
-	unsigned long cursor_buf_phys;
-	unsigned long cursor_buf_iova;
+	phys_addr_t cursor_buf_phys;
+	dma_addr_t cursor_buf_iova;
 
 	int ext_ad_ctrl;
 	u32 ext_bl_ctrl;
@@ -281,12 +281,28 @@ static inline void mdss_fb_update_notify_update(struct msm_fb_data_type *mfd)
 	}
 }
 
-static inline bool mdss_fb_is_panel_power_on(struct msm_fb_data_type *mfd)
+static inline bool mdss_fb_is_power_off(struct msm_fb_data_type *mfd)
 {
-	return (mfd->panel_power_state != MDSS_PANEL_POWER_OFF);
+	return mdss_panel_is_power_off(mfd->panel_power_state);
 }
 
-int mdss_fb_get_phys_info(unsigned long *start, unsigned long *len, int fb_num);
+static inline bool mdss_fb_is_power_on_interactive(
+	struct msm_fb_data_type *mfd)
+{
+	return mdss_panel_is_power_on_interactive(mfd->panel_power_state);
+}
+
+static inline bool mdss_fb_is_power_on(struct msm_fb_data_type *mfd)
+{
+	return mdss_panel_is_power_on(mfd->panel_power_state);
+}
+
+static inline bool mdss_fb_is_power_on_lp(struct msm_fb_data_type *mfd)
+{
+	return mdss_panel_is_power_on_lp(mfd->panel_power_state);
+}
+
+int mdss_fb_get_phys_info(dma_addr_t *start, unsigned long *len, int fb_num);
 void mdss_fb_set_backlight(struct msm_fb_data_type *mfd, u32 bkl_lvl);
 void mdss_fb_update_backlight(struct msm_fb_data_type *mfd);
 int mdss_fb_wait_for_fence(struct msm_sync_pt_data *sync_pt_data);

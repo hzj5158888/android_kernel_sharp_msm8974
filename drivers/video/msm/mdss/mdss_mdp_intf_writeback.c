@@ -105,7 +105,7 @@ static int mdss_mdp_writeback_addr_setup(struct mdss_mdp_writeback_ctx *ctx,
 		return -EINVAL;
 	data = *in_data;
 
-	pr_debug("wb_num=%d addr=0x%x\n", ctx->wb_num, data.p[0].addr);
+	pr_debug("wb_num=%d addr=0x%pa\n", ctx->wb_num, &data.p[0].addr);
 
 	ret = mdss_mdp_data_check(&data, &ctx->dst_planes);
 	if (ret)

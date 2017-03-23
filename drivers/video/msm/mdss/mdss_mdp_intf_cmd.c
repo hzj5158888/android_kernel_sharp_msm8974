@@ -17,7 +17,7 @@
 #include "mdss_mdp.h"
 #include "mdss_panel.h"
 #include "mdss_debug.h"
-#include "mdss_mdp_trace.h"
+#include <trace/mdss_mdp_trace.h>
 #ifdef CONFIG_SHLCDC_BOARD /* CUST_ID_00035 */
 #include "mdss_shdisp.h"
 #include "mdss_dsi.h"

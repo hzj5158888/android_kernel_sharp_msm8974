@@ -520,7 +520,7 @@ static int mdp3_ctrl_dma_init(struct msm_fb_data_type *mfd,
 	sourceConfig.x = 0;
 	sourceConfig.y = 0;
 	sourceConfig.stride = fix->line_length;
-	sourceConfig.buf = (void *)mfd->iova;
+	sourceConfig.buf = mfd->iova;
 	sourceConfig.vporch = vporch;
 	sourceConfig.vsync_count =
 		MDP_VSYNC_CLK_RATE / (frame_rate * vtotal);
@@ -975,7 +975,7 @@ static int mdp3_overlay_play(struct msm_fb_data_type *mfd,
 
 	mutex_lock(&mdp3_session->lock);
 
-	if (mdss_fb_is_panel_power_on(mfd))
+	if (mdss_fb_is_power_on(mfd))
 		rc = mdp3_overlay_queue_buffer(mfd, req);
 	else
 		rc = -EPERM;

@@ -23,7 +23,7 @@
 #include "mdss_fb.h"
 #include "mdss_mdp.h"
 #include "mdss_debug.h"
-#include "mdss_mdp_trace.h"
+#include <trace/mdss_mdp_trace.h>
 #include "mdss_debug.h"
 
 static void mdss_mdp_xlog_mixer_reg(struct mdss_mdp_ctl *ctl);
@@ -1848,7 +1848,7 @@ int mdss_mdp_ctl_start(struct mdss_mdp_ctl *ctl, bool handoff)
 
 	pr_debug("ctl_num=%d, power_state=%d\n", ctl->num, ctl->power_state);
 
-	if (ctl->power_state == MDSS_PANEL_POWER_ON) {
+	if (mdss_mdp_ctl_is_power_on_interactive(ctl)) {
 		pr_debug("%d: panel already on!\n", __LINE__);
 		return 0;
 	}
@@ -1861,7 +1861,7 @@ int mdss_mdp_ctl_start(struct mdss_mdp_ctl *ctl, bool handoff)
 
 	mutex_lock(&ctl->lock);
 
-	if (ctl->power_state == MDSS_PANEL_POWER_OFF)
+	if (mdss_mdp_ctl_is_power_off(ctl))
 		memset(&ctl->cur_perf, 0, sizeof(ctl->cur_perf));
 
 	/*
@@ -1941,7 +1941,7 @@ int mdss_mdp_ctl_stop(struct mdss_mdp_ctl *ctl, int power_state)
 		goto end;
 	}
 
-	if (power_state != MDSS_PANEL_POWER_OFF) {
+	if (mdss_panel_is_power_on(power_state)) {
 		pr_debug("panel is not off, leaving ctl power on\n");
 		goto end;
 	}
