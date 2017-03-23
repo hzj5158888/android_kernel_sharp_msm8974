@@ -1195,6 +1195,20 @@ retry:
 kfree:
 	kfree(data_buf);
 out:
+	if (card && card->quirks & MMC_QUIRK_SEC_SEARCH_TUNE) {
+		while (search_retries--) {
+			struct mmc_command cmd = {0};
+			cmd.opcode = MMC_SEND_STATUS;
+			if (!mmc_host_is_spi(card->host))
+				cmd.arg = card->rca << 16;
+			cmd.flags = MMC_RSP_SPI_R2 | MMC_RSP_R1 | MMC_CMD_AC;
+			rc = mmc_wait_for_cmd(card->host, &cmd, 3);
+			if (!rc)
+				break;
+			msleep(10);
+		}
+	}
+
 	spin_lock_irqsave(&host->lock, flags);
 	if (!rc)
 		msm_host->tuning_done = true;
