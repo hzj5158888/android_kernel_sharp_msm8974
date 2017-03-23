@@ -20,7 +20,7 @@
 	sharp,shdisp_clmr {
 		status = "ok";
     };
-	
+
 
 	sharp,shdisp_ir2e69y8 {
 		status = "ok";
@@ -46,18 +46,3 @@
     qcom,mdss-pan-physical-width-dimension = <56>;
     qcom,mdss-pan-physical-height-dimension = <100>;
 };
-
-&mdss_dsi0 {
-    qcom,dsi-pref-prim-pan=<&dsi_shdisp_andy>;
-
-    /delete-property/ vdd-supply;
-    /delete-property/ qcom,platform-reset-gpio;
-    /delete-property/ qcom,platform-enable-gpio;
-
-    /delete-node/ qcom,platform-supply-entry1;
-};
-
-&mdss_dsi1 {
-    /delete-property/ vdd-supply;
-};
-
