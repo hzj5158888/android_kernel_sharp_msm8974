@@ -1089,7 +1089,7 @@ qup_i2c_sub_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num, int c
 
 #if defined( CONFIG_I2C_CUST_SH )
 	if (dev->pwr_state == 0) {
-		i2c_qup_pm_resume(dev);
+		i2c_qup_resume(dev);
 	}
 #endif	/* defined( CONFIG_I2C_CUST_SH ) */
 
@@ -1417,7 +1417,7 @@ timeout_err:
 
 #if defined( CONFIG_I2C_CUST_SH )
 	if (dev->pwr_state != 0) {
-	  	i2c_qup_pm_suspend(dev);
+	  	i2c_qup_suspend(dev);
 	}
 #endif /* #if defined( CONFIG_I2C_CUST_SH ) */
 	if (dev->pdata->clk_ctl_xfer)
