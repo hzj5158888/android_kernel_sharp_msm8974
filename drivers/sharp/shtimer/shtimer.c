@@ -31,7 +31,7 @@
 #include <linux/ktime.h>
 #include <sharp/shtimer.h>
 #include <linux/rtc.h>
-#include <linux/android_alarm.h>
+#include <linux/alarmtimer.h>
 
 
 #define SHTIMER_MAGIC 't'
@@ -97,7 +97,7 @@ static long shtimer_ioctl(struct file *file, unsigned int cmd, unsigned long arg
 	shtimer_list *list = NULL;
 	struct list_head *item;
 	struct timespec tv;
-	ktime_t ts;
+	struct timespec ts;
 	ktime_t te;
 
 	if(file->private_data == NULL) {
@@ -140,18 +140,17 @@ static long shtimer_ioctl(struct file *file, unsigned int cmd, unsigned long arg
 		}
 
 		alarm_try_to_cancel(&list->alarm);
-
 		spin_lock_irqsave(&shtimer_slock, flags);
-		ts = alarm_get_elapsed_realtime();
 		wake_up(&list->wait_queue);
 		list->pending = SHTIMER_NONE_SIG;
 		list->waiting = true;
 		list->tv = timespec_to_ktime(tv);
 		list->base_tv = ktime_get();
-		te = ktime_add(ts, list->tv);
+		get_monotonic_boottime(&ts);
+		te = timespec_to_ktime(ts);
 		spin_unlock_irqrestore(&shtimer_slock, flags);
 
-		alarm_start_range(&list->alarm, te, te);
+		alarm_start_relative(&list->alarm, te);
 
 	case SHTIMER_CMD_WAIT:
 		spin_lock_irqsave(&shtimer_slock, flags);
@@ -198,7 +197,9 @@ freeze_request:
 	return ret;
 }
 
-static void shtimer_timer_expired(struct alarm *alarm)
+static enum alarmtimer_restart
+shtimer_timer_expired(struct alarm *alarm,
+							ktime_t now)
 {
 	unsigned long flags;
 	shtimer_list *list;
@@ -213,7 +214,7 @@ static void shtimer_timer_expired(struct alarm *alarm)
 	if(item == &shtimer_head){
 		printk("%s: list is null",__func__);
 		spin_unlock_irqrestore(&shtimer_slock, flags);
-		return;
+		return ALARMTIMER_NORESTART;
 	}
 
 	shtimer_wake_lock(list);
@@ -221,7 +222,7 @@ static void shtimer_timer_expired(struct alarm *alarm)
 	list->waiting = false;
 	wake_up(&list->wait_queue);
 	spin_unlock_irqrestore(&shtimer_slock, flags);
-	return;
+	return ALARMTIMER_NORESTART;
 }
 
 static int shtimer_open(struct inode *inode, struct file *file)
@@ -244,7 +245,7 @@ static int shtimer_open(struct inode *inode, struct file *file)
 	}
 
 	memset(list, 0x00, sizeof(shtimer_list));
-	alarm_init(&list->alarm, ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP, shtimer_timer_expired);
+	alarm_init(&list->alarm, ALARM_BOOTTIME, shtimer_timer_expired);
 	list->alarm.function = shtimer_timer_expired;
 	list->descriptor = shtimer_descriptor;
 	list->waiting = false;
