@@ -74,12 +74,11 @@ static int __devinit ram_console_probe(struct platform_device *pdev)
 	return 0;
 }
 
-#ifdef CONFIG_MACH_PA23
+#ifdef CONFIG_MACH_PA23 /* last_kmsg */
 static const struct of_device_id msm_ram_console_match[] = {
 	{.compatible = "ram-console"},
 	{}
 };
-
 #endif
 
 static struct platform_driver ram_console_driver = {
@@ -112,9 +111,6 @@ static ssize_t ram_console_read_old(struct file *file, char __user *buf,
 	const char *old_log = persistent_ram_old(prz);
 	char *str;
 	int ret;
-
-	if (dmesg_restrict && !capable(CAP_SYSLOG))
-		return -EPERM;
 
 	/* Main last_kmsg log */
 	if (pos < old_log_size) {
@@ -172,7 +168,7 @@ static int __init ram_console_late_init(void)
 
 	if (persistent_ram_old_size(prz) == 0)
 		return 0;
-	printk("ram_console_late_init() create proc last_kmsg \r\n");
+
 	entry = create_proc_entry("last_kmsg", S_IFREG | S_IRUGO, NULL);
 	if (!entry) {
 		printk(KERN_ERR "ram_console: failed to create proc entry\n");

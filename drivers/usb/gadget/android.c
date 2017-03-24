@@ -60,6 +60,7 @@
 #ifdef CONFIG_SND_PCM
 #include "f_audio_source.c"
 #endif
+#include "f_fs.c"
 #include "f_mass_storage.c"
 #include "u_serial.c"
 #include "u_sdio.c"
@@ -219,6 +220,8 @@ struct android_dev {
 
 	/* A list node inside the android_dev_list */
 	struct list_head list_item;
+
+	char ffs_aliases[256];
 };
 
 struct android_configuration {
@@ -2587,9 +2590,12 @@ functions_store(struct device *pdev, struct device_attribute *attr,
 	struct android_configuration *conf;
 	char *conf_str;
 	struct android_usb_function_holder *f_holder;
-	char *name;
+	char *name = NULL;
 	char buf[256], *b;
+	char aliases[256], *a;
 	int err;
+	int is_ffs;
+	int ffs_enabled = 0;
 
 	mutex_lock(&dev->mutex);
 
@@ -2617,17 +2623,18 @@ functions_store(struct device *pdev, struct device_attribute *attr,
 
 	while (b) {
 		conf_str = strsep(&b, ":");
-		if (conf_str) {
-			/* If the next not equal to the head, take it */
-			if (curr_conf->next != &dev->configs)
-				conf = list_entry(curr_conf->next,
-						  struct android_configuration,
-						  list_item);
-			else
-				conf = alloc_android_config(dev);
+		if (!conf_str)
+			continue;
 
-			curr_conf = curr_conf->next;
-		}
+		/* If the next not equal to the head, take it */
+		if (curr_conf->next != &dev->configs)
+			conf = list_entry(curr_conf->next,
+					  struct android_configuration,
+					  list_item);
+		else
+			conf = alloc_android_config(dev);
+
+		curr_conf = curr_conf->next;
 
 		while (conf_str) {
 			name = strsep(&conf_str, ",");
