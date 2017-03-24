@@ -66,13 +66,6 @@
 	status = "ok";
 };
 
-&sdcc2 {
-	vdd-supply = <>;
-	qcom,vdd-voltage-level = <>;
-	qcom,vdd-current-level = <>;
-	sdpwr-gpio = <&pm8941_gpios 11 0>;
-};
-
 &sdhc_2 {
 	vdd-supply = <>;
 	qcom,vdd-voltage-level = <>;
